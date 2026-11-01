@@ -18,6 +18,18 @@ export class OrdersService {
     private readonly dataSource: DataSource,
   ) {}
 
+  async findAll() {
+    return this.orderRepository.find({ order: { id: 'DESC' } });
+  }
+
+  async findOne(id: number) {
+    const order = await this.orderRepository.findOne({ where: { id } });
+    if (!order) {
+      throw new NotFoundException(`Pedido ${id} não encontrado`);
+    }
+    return order;
+  }
+
   async create(dto: CreateOrderDto, userId: number): Promise<Order> {
     // Criar uma order para salvar
     // para cada item do DTO,
