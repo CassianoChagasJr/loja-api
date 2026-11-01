@@ -6,7 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OrdersModule } from './orders/orders.module.js';
 
-//parei no video 15.2 de Josino - Diagramas de projeto e documentação
+//parei no video 18 de Josino - Order service
 
 @Module({
   imports: [
