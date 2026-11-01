@@ -10,7 +10,7 @@ import {
 class OrderItemInput {
   @IsInt()
   @Min(1)
-  produtoId: number;
+  idProduto: number;
 
   @IsInt()
   @Min(1)
