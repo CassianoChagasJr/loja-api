@@ -75,4 +75,29 @@ export class OrdersService {
       return manager.save(order);
     });
   }
+
+  async cancel(id: number) {
+    // buscar a order por id
+    // se não retornar nada, erro 404
+    // se retornou, verifica se o status é diferente de ABERTO, caso sim, erro 400
+    // para cada item, devolver a quantidade pro estoque
+    // muidar status da order para CANCELADO
+    // salvar
+    return this.dataSource.manager.transaction(async (manager) => {
+      const order = await manager.findOne(Order, { where: { id } });
+      if (!order) {
+        throw new NotFoundException(`Pedido com ID ${id} não encontrado`);
+      }
+      if (order.status != 'ABERTO') {
+        throw new BadRequestException(
+          `Só pedidos abertos podem ser cancelados`,
+        );
+      }
+      for (const item of order.itens) {
+        await manager.increment(Produto,{ id: item.idProduto },'estoque',item.quantidade);
+      }
+      order.status = 'CANCELADO';
+      return manager.save(order);
+    });
+  }
 }
