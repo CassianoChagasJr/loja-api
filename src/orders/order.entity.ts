@@ -2,10 +2,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { OrderItem } from './order-item.entity.js';
 
 export type OrderStatus = 'ABERTO' | 'PAGO' | 'CANCELADO';
 
@@ -23,6 +23,27 @@ export class Order {
   @CreateDateColumn()
   dataCriacao: Date;
 
-  @OneToMany(() => OrderItem, (item) => item.order, { cascade: true, eager: true })
+  @OneToMany(() => OrderItem, (item) => item.order, {
+    cascade: true,
+    eager: true,
+  })
   itens: OrderItem[];
+}
+
+@Entity('order_itens')
+export class OrderItem {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  idProduto: number;
+
+  @Column({ type: 'int' })
+  quantidade: number;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2 })
+  precoUnico: number;
+
+  @ManyToOne(() => Order, (order) => order.itens)
+  order: Order;
 }
