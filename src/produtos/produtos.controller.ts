@@ -14,7 +14,7 @@ import { ProdutoDto } from './dto/produto.dto.js';
 import { CreateProdutoDto } from './dto/create-produto.dto.js';
 import ProdutoService from './produto.service.js';
 
-//parei no video 15.2 de Josino - Diagramas de projeto e documentação
+
 
 @Controller('produtos')
 export class ProdutosController {
