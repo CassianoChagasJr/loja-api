@@ -5,12 +5,12 @@ export class Produto {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 225 })
-  name: string;
+  @Column({ length: 255 })
+  nome: string;
 
   @Column({ type: 'numeric', precision: 10, scale: 2 })
-  price: number;
+  preco: number;
 
   @Column({ type: 'int', default: 0 })
-  stock: number;
+  estoque: number;
 }

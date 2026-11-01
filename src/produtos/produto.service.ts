@@ -2,47 +2,45 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ProdutoDto } from './dto/produto.dto.js';
 import { UpdateProdutoDto } from './dto/update-produto.dto.js';
 import { CreateProdutoDto } from './dto/create-produto.dto.js';
+import { Repository } from 'typeorm';
+import { Produto } from './produto.entity.js';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export default class ProdutoService {
-  private produtos: ProdutoDto[] = [];
-  private nextId: number = 1;
+  constructor(
+    @InjectRepository(Produto)
+    private readonly produtoRepository: Repository<Produto>,
+  ) {}
 
-  findAll(): ProdutoDto[] {
-    return this.produtos;
+  findAll(): Promise<Produto[]> {
+    return this.produtoRepository.find();
   }
 
-  findById(id: number): ProdutoDto {
-    console.log('id recebido:', id);
-    const produto = this.produtos.find((produto) => produto.id == id);
+  async findById(id: number): Promise<Produto> {
+    let produto = await this.produtoRepository.findOne({ where: { id } });
     if (!produto)
       throw new NotFoundException(`Produto com ID ${id} não encontrado`);
     return produto;
   }
 
-  update(id: number, updatedProduct: UpdateProdutoDto): ProdutoDto {
-    const produto = this.produtos.find((produto) => produto.id == id);
+  async update(id: number, updatedProduct: UpdateProdutoDto): Promise<Produto> {
+    const produto = await this.produtoRepository.findOne({ where: { id } });
     if (!produto)
       throw new NotFoundException(`Produto com id ${id} não encontrado`);
     Object.assign(produto, updatedProduct);
     console.log(produto);
-    return produto;
+    return this.produtoRepository.save(produto);
   }
 
-  delete(id: number) {
-    // buscar indice do produto no array
-    const index = this.produtos.findIndex((produto) => produto.id == id);
-    // se não encontrar exibir o NotFoundException
-    if (index === -1)
+  async delete(id: number): Promise<void> {
+    const result = await this.produtoRepository.delete(id);
+    if (!result.affected)
       throw new NotFoundException(`Produto com id ${id} não encontrado`);
-    // se encontrar, remover o produto do array
-    this.produtos.splice(index, 1);
   }
 
-  create(createProdutos: CreateProdutoDto): ProdutoDto {
-    const { nome, preco, estoque } = createProdutos;
-    const produtos: ProdutoDto = { id: this.nextId++, nome, preco, estoque };
-    this.produtos.push(produtos);
-    return produtos;
+  async create(createProdutos: CreateProdutoDto): Promise<Produto> {
+    const produto = this.produtoRepository.create(createProdutos);
+    return this.produtoRepository.save(produto);
   }
 }
