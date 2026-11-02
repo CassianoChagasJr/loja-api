@@ -2,10 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ProdutoDto } from './dto/produto.dto.js';
 import { UpdateProdutoDto } from './dto/update-produto.dto.js';
 import { CreateProdutoDto } from './dto/create-produto.dto.js';
-import { ILike, Repository } from 'typeorm';
+import { Between, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto } from './produto.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PatchProdutoDto } from './dto/Patch-Produto.dto.js';
+import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
 
 @Injectable()
 export default class ProdutoService {
@@ -25,15 +26,33 @@ export default class ProdutoService {
     return produto;
   }
 
-  async findString(palavra: string) {
+  async findQuery(query: ListaProdutosQueryDto): Promise<Produto[]> {
+    const { q, minPrice, maxPrice } = query;
+    const whereConditions: any = {};
+
+    // 1. Filtro por substring no nome do produto
+    if (q) {
+      whereConditions.nome = ILike(`%${q}%`);
+    }
+
+    // 2. Filtro dinâmico por preço
+    if (minPrice && maxPrice) {
+      whereConditions.preco = Between(minPrice, maxPrice);
+    } else if (minPrice) {
+      whereConditions.preco = MoreThanOrEqual(minPrice);
+    } else if (maxPrice) {
+      whereConditions.preco = LessThanOrEqual(maxPrice);
+    }
+
     return await this.produtoRepository.find({
-      where: {
-        nome: ILike(`%${palavra}%`)
-      },
+      where: whereConditions,
     });
   }
 
-  async update(id: number, updatedProduct: UpdateProdutoDto | PatchProdutoDto): Promise<Produto> {
+  async update(
+    id: number,
+    updatedProduct: UpdateProdutoDto | PatchProdutoDto,
+  ): Promise<Produto> {
     const produto = await this.produtoRepository.findOne({ where: { id } });
     if (!produto)
       throw new NotFoundException(`Produto com id ${id} não encontrado`);

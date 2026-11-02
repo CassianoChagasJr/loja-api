@@ -31,17 +31,17 @@ import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
 import type { Response } from 'express';
 import { PatchProdutoDto } from './dto/Patch-Produto.dto.js';
+import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
 
 @Controller('produtos')
 export class ProdutosController {
   constructor(private readonly produtoService: ProdutoService) {}
 
   @Get()
-  findAll(@Query('search') search?: string): Promise<ProdutoDto[]> {
-    if (search) {
-      return this.produtoService.findString(search);
-    }
-    return this.produtoService.findAll();
+  findAll(@Query() query: ListaProdutosQueryDto): Promise<ProdutoDto[]> {
+    return query.q || query.minPrice || query.maxPrice
+      ? this.produtoService.findQuery(query)
+      : this.produtoService.findAll();
   }
 
   @Get(':id')
