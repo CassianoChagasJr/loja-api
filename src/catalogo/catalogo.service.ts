@@ -17,8 +17,8 @@ export class CatalogoService {
     );
 
     return {
-      produtosTotais: produtos.length, // Quantidade de registros na tabela
-      unidadesTotaisEstoque: unidadesTotaisEstoque, // Soma de todo o estoque
+      produtosTotaisCadastrados: produtos.length, // Quantidade de registros na tabela
+      unidadesTotaisEmEstoque: unidadesTotaisEstoque, // Soma de todo o estoque
     };
   }
 }
