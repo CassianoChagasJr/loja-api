@@ -5,7 +5,7 @@ import { CreateProdutoDto } from './dto/create-produto.dto.js';
 import { Between, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto } from './produto.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PatchProdutoDto } from './dto/Patch-Produto.dto.js';
+import { PatchProdutoDto } from './dto/patch-produto.dto.js';
 import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
 
 @Injectable()

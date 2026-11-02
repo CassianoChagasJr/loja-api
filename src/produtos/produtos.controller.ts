@@ -30,7 +30,7 @@ import { diskStorage } from 'multer';
 import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
 import type { Response } from 'express';
-import { PatchProdutoDto } from './dto/Patch-Produto.dto.js';
+import { PatchProdutoDto } from './dto/patch-produto.dto.js'
 import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
 
 @Controller('produtos')

@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OrdersModule } from './orders/orders.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { CatalogoModule } from './catalogo/catalogo.module.js';
 
 //parei no video 31 de Josino - upload de arquivos
 
@@ -28,6 +29,7 @@ import { AuthModule } from './auth/auth.module.js';
     }),
     OrdersModule,
     AuthModule,
+    CatalogoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
