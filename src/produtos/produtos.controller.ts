@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -6,9 +7,12 @@ import {
   HttpCode,
   NotFoundException,
   Param,
+  ParseIntPipe,
   Post,
   Put,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UpdateProdutoDto } from './dto/update-produto.dto.js';
 import { ProdutoDto } from './dto/produto.dto.js';
@@ -18,6 +22,8 @@ import { JwtAuthGuard } from '../auth/jwt.auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 @Controller('produtos')
 export class ProdutosController {
@@ -74,5 +80,40 @@ export class ProdutosController {
   })
   create(@Body() createProdutos: CreateProdutoDto): Promise<ProdutoDto> {
     return this.produtoService.create(createProdutos);
+  }
+
+  @Post(':id/image')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (_req, file, callback) => {
+          const safe = file.originalname.replace(/\s+/g, '_');
+          callback(null, `${Date.now()} - ${safe}`);
+        },
+      }),
+      limits: { fileSize: 2 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        const ok = ['image/jpeg', 'image/png', 'image/webp'].includes(
+          file.mimetype,
+        );
+        if (!ok) {
+          return callback(null, false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  async uploadImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException(`Envie o campo file (jpeg/png/web)`);
+    }
+    await this.produtoService.updateImageFileName(id, file.filename);
+    return { produtoId: id, imageUrl: `/produtos/${id}/image` };
   }
 }
