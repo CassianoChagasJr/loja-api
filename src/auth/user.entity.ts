@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-export type Perfil = 'CLIENTE' | 'ADMIN';
+export type Perfil = 'CLIENTE' | 'ADMIN' | 'MANAGER';
 
 @Entity('users')
 export class Usuario {
