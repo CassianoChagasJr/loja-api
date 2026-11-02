@@ -5,6 +5,7 @@ import { CreateProdutoDto } from './dto/create-produto.dto.js';
 import { ILike, Repository } from 'typeorm';
 import { Produto } from './produto.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PatchProdutoDto } from './dto/Patch-Produto.dto.js';
 
 @Injectable()
 export default class ProdutoService {
@@ -32,7 +33,7 @@ export default class ProdutoService {
     });
   }
 
-  async update(id: number, updatedProduct: UpdateProdutoDto): Promise<Produto> {
+  async update(id: number, updatedProduct: UpdateProdutoDto | PatchProdutoDto): Promise<Produto> {
     const produto = await this.produtoRepository.findOne({ where: { id } });
     if (!produto)
       throw new NotFoundException(`Produto com id ${id} não encontrado`);

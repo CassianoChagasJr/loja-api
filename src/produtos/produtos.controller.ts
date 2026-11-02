@@ -30,6 +30,7 @@ import { diskStorage } from 'multer';
 import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
 import type { Response } from 'express';
+import { PatchProdutoDto } from './dto/Patch-Produto.dto.js';
 
 @Controller('produtos')
 export class ProdutosController {
@@ -64,9 +65,9 @@ export class ProdutosController {
   @ApiOperation({ summary: 'Atualiza parcialmente um produto' })
   partialUpdate(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateProduct: UpdateProdutoDto,
+    @Body() patchProdutoDto: PatchProdutoDto,
   ): Promise<ProdutoDto> {
-    return this.produtoService.update(id, updateProduct);
+    return this.produtoService.update(id, patchProdutoDto);
   }
 
   @Delete(':id')
