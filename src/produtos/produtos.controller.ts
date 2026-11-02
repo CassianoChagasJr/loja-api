@@ -44,7 +44,8 @@ export class ProdutosController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   update(
     @Param('id') id: number,
     @Body() updatedProduct: UpdateProdutoDto,
