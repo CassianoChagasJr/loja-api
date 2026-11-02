@@ -15,6 +15,7 @@ import { ProdutoDto } from './dto/produto.dto.js';
 import { CreateProdutoDto } from './dto/create-produto.dto.js';
 import ProdutoService from './produto.service.js';
 import { JwtAuthGuard } from '../auth/jwt.auth.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
 
 
 
@@ -44,6 +45,7 @@ export class ProdutosController {
   @Delete(':id')
   @HttpCode(204)
   @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
   delete(@Param('id') id: number): Promise<void> {
     return this.produtoService.delete(id);
   }
