@@ -11,7 +11,12 @@ export class AppController {
   }
 
   @Get('health')
-  healthCheck(){
-    return this.appService.getHealthVersion()
+  health() {
+    return { status: 'ok' };
+  }
+
+  @Get('health/version')
+  healthVersion() {
+    return this.appService.healthVersion( );
   }
 }
