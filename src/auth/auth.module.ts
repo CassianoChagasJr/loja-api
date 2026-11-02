@@ -5,6 +5,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Usuario } from './user.entity.js';
 import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './jwt.strategy.js';
+import { JwtAuthGuard } from './jwt.auth.guard.js';
 
 @Module({
   imports: [
@@ -20,8 +23,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         },
       }),
     }),
+    PassportModule.register({defaultStrategy: 'jwt'})
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard],
+  exports: [AuthService, JwtModule, PassportModule, JwtAuthGuard],
 })
 export class AuthModule {}
