@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -24,6 +25,9 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { join } from 'path';
+import { createReadStream, existsSync } from 'fs';
+import type { Response } from 'express';
 
 @Controller('produtos')
 export class ProdutosController {
@@ -115,5 +119,18 @@ export class ProdutosController {
     }
     await this.produtoService.updateImageFileName(id, file.filename);
     return { produtoId: id, imageUrl: `/produtos/${id}/image` };
+  }
+
+  @Get(':id/image')
+  async getImage(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
+    const produto = await this.produtoService.findById(id);
+    if (!produto || !produto.imageFileName) {
+      throw new NotFoundException(`Imagem não encontrada`);
+    }
+    const caminho = join(process.cwd(), 'uploads', produto.imageFileName);
+    if (!existsSync(caminho)) {
+      throw new NotFoundException(`Imagem não encontrada`);
+    }
+    createReadStream(caminho).pipe(res);
   }
 }
