@@ -43,4 +43,13 @@ export default class ProdutoService {
     const produto = this.produtoRepository.create(createProdutos);
     return this.produtoRepository.save(produto);
   }
+
+  async updateImageFileName(id: number, filename: string) {
+    const produto = await this.produtoRepository.findOne({ where: { id } });
+    if (!produto) {
+      throw new NotFoundException(` Produto com ID: ${id} não encontrado`);
+    }
+    produto.imageFileName = filename;
+    return this.produtoRepository.save(produto);
+  }
 }

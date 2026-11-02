@@ -13,4 +13,7 @@ export class Produto {
 
   @Column({ type: 'int', default: 0 })
   estoque: number;
+
+  @Column({ type: 'varchar', length: '255', nullable: true })
+  imageFileName: string | null;
 }
