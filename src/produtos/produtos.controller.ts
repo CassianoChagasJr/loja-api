@@ -8,8 +8,10 @@ import {
   NotFoundException,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
+  Query,
   Res,
   UploadedFile,
   UseGuards,
@@ -34,7 +36,10 @@ export class ProdutosController {
   constructor(private readonly produtoService: ProdutoService) {}
 
   @Get()
-  findAll(): Promise<ProdutoDto[]> {
+  findAll(@Query('search') search?: string): Promise<ProdutoDto[]> {
+    if (search) {
+      return this.produtoService.findString(search);
+    }
     return this.produtoService.findAll();
   }
 
@@ -51,6 +56,17 @@ export class ProdutosController {
     @Body() updatedProduct: UpdateProdutoDto,
   ): Promise<ProdutoDto> {
     return this.produtoService.update(id, updatedProduct);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Atualiza parcialmente um produto' })
+  partialUpdate(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateProduct: UpdateProdutoDto,
+  ): Promise<ProdutoDto> {
+    return this.produtoService.update(id, updateProduct);
   }
 
   @Delete(':id')

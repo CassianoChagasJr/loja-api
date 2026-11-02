@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ProdutoDto } from './dto/produto.dto.js';
 import { UpdateProdutoDto } from './dto/update-produto.dto.js';
 import { CreateProdutoDto } from './dto/create-produto.dto.js';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Produto } from './produto.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -22,6 +22,14 @@ export default class ProdutoService {
     if (!produto)
       throw new NotFoundException(`Produto com ID ${id} não encontrado`);
     return produto;
+  }
+
+  async findString(palavra: string) {
+    return await this.produtoRepository.find({
+      where: {
+        nome: ILike(`%${palavra}%`)
+      },
+    });
   }
 
   async update(id: number, updatedProduct: UpdateProdutoDto): Promise<Produto> {
