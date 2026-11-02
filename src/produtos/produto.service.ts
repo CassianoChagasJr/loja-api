@@ -2,7 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ProdutoDto } from './dto/produto.dto.js';
 import { UpdateProdutoDto } from './dto/update-produto.dto.js';
 import { CreateProdutoDto } from './dto/create-produto.dto.js';
-import { Between, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  Between,
+  ILike,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { Produto } from './produto.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PatchProdutoDto } from './dto/patch-produto.dto.js';
@@ -59,6 +65,17 @@ export default class ProdutoService {
     Object.assign(produto, updatedProduct);
     console.log(produto);
     return this.produtoRepository.save(produto);
+  }
+
+  async updateCategoria(id: number, idCategoria: number): Promise<Produto> {
+    const produto = await this.produtoRepository.findOne({ where: { id } });
+
+    if (!produto) {
+      throw new NotFoundException(`Produto com ID: ${id} não encontrado`);
+    }
+
+    produto.idCategoria = idCategoria;
+    return await this.produtoRepository.save(produto);
   }
 
   async delete(id: number): Promise<void> {

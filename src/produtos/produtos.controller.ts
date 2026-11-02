@@ -30,8 +30,9 @@ import { diskStorage } from 'multer';
 import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
 import type { Response } from 'express';
-import { PatchProdutoDto } from './dto/patch-produto.dto.js'
+import { PatchProdutoDto } from './dto/patch-produto.dto.js';
 import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
+import { UpdateProdutoCategoriaDto } from './dto/update-produto-categoria.dto.js';
 
 @Controller('produtos')
 export class ProdutosController {
@@ -68,6 +69,16 @@ export class ProdutosController {
     @Body() patchProdutoDto: PatchProdutoDto,
   ): Promise<ProdutoDto> {
     return this.produtoService.update(id, patchProdutoDto);
+  }
+
+  @Patch(':id/categoria')
+  async updateCategoria(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateProdutoCategoriaDto,
+  ) {
+    return await this.produtoService.updateCategoria(id, dto.idCategoria
+      
+    );
   }
 
   @Delete(':id')
