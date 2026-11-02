@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Usuario } from './user.entity.js';
 import { Repository } from 'typeorm';
@@ -38,5 +42,30 @@ export class AuthService {
     const usuarioSalvo = await this.usuarioRepository.save(usuario);
     const { password: _, ...user_sem_senha } = usuarioSalvo;
     return user_sem_senha;
+  }
+
+  async login(username: string, password: string) {
+    // buscar o usuário no banco
+    // verificar senha
+    // retornar erro se senha invalida
+    // gerar token jwt e retornar se a senha for valida
+    // retornar token jwt se senha valida
+
+    const usuario = await this.usuarioRepository.findOne({
+      where: { username },
+    });
+    if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
+      throw new UnauthorizedException(`credenciais inválidas`);
+    }
+
+    const payload = {
+      sub: usuario.id,
+      username: usuario.username,
+      perfil: usuario.perfil,
+    };
+
+    return {
+      acesso_token: await this.jwtService.signAsync(payload),
+    };
   }
 }
