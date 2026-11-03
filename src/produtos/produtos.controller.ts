@@ -145,7 +145,6 @@ export class ProdutosController {
   }
 
   @Delete(':id')
-  @HttpCode(204)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiResponse({
