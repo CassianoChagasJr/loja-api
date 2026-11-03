@@ -6,9 +6,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Usuario } from './user.entity.js';
 import { Repository } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { IsEmail } from 'class-validator';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,7 @@ export class AuthService {
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
   ) {}
 
   async registro(username: string, email: string, password: string) {
@@ -65,8 +67,20 @@ export class AuthService {
       perfil: usuario.perfil,
     };
 
+    const acessoToken = await this.jwtService.signAsync(payload);
+    const refreshToken = await this.jwtService.signAsync(
+      { sub: usuario.id },
+      {
+        secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
+        expiresIn: this.config.getOrThrow<JwtSignOptions['expiresIn']>(
+          'JWT_REFRESH_EXPIRES_IN',
+        ),
+      },
+    );
+
     return {
-      acesso_token: await this.jwtService.signAsync(payload),
+      acesso_token: acessoToken,
+      refresh_token: refreshToken,
     };
   }
 
