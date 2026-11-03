@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,6 +10,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import { DataSource } from 'typeorm';
 import { Produto } from '../produtos/produto.entity.js';
+
+const PERFIS_COM_ACESSO_TOTAL = ['ADMIN', 'MANAGER'];
+const PERFIS_CANCELAM_QUALQUER = ['ADMIN'];
 
 @Injectable()
 export class OrdersService {
@@ -66,7 +70,7 @@ export class OrdersService {
       }
       return manager.save(order);
     });
-     // Criar uma order para salvar
+    // Criar uma order para salvar
     // para cada item do DTO,
     // - validar se o produto existe
     // - se não existir produto retorna 404
@@ -87,17 +91,52 @@ export class OrdersService {
         );
       }
       for (const item of order.itens) {
-        await manager.increment(Produto,{ id: item.idProduto },'estoque',item.quantidade);
+        await manager.increment(
+          Produto,
+          { id: item.idProduto },
+          'estoque',
+          item.quantidade,
+        );
       }
       order.status = 'CANCELADO';
       return manager.save(order);
     });
 
-     // buscar a order por id
+    // buscar a order por id
     // se não retornar nada, erro 404
     // se retornou, verifica se o status é diferente de ABERTO, caso sim, erro 400
     // para cada item, devolver a quantidade pro estoque
     // muidar status da order para CANCELADO
     // salvar
+  }
+
+  async findAllForActor(usuarioId: number, perfil: string) {
+    if (PERFIS_COM_ACESSO_TOTAL.includes(perfil)) {
+      return this.findAll();
+    }
+    return this.orderRepository.find({
+      where: { userId: usuarioId },
+      order: { id: 'DESC' },
+    });
+  }
+
+  async findOneForActor(id: number, usuarioId: number, perfil: string) {
+    const order = await this.findOne(id);
+    if (
+      !PERFIS_COM_ACESSO_TOTAL.includes(perfil) &&
+      order.userId !== usuarioId
+    ) {
+      throw new NotFoundException(`Pedido ${id} não encontrado`);
+    }
+    return order;
+  }
+
+  async cancelForActor(id: number, usuarioId: number, perfil: string) {
+    const order = await this.findOneForActor(id, usuarioId, perfil);
+    const ehDono = order.userId === usuarioId;
+    if (!ehDono && !PERFIS_CANCELAM_QUALQUER.includes(perfil)) {
+      throw new ForbiddenException('Você não pode cancelar este pedido');
+    }
+    return this.cancel(id);
   }
 }
