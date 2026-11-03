@@ -53,6 +53,22 @@ export class ProdutosController {
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @ApiResponse({
+    status: 201,
+    description: 'Produto cadastrado com sucesso',
+    type: ProdutoDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso proibido. Você não tem permissão para acessar esse recurso',
+  })
+  @ApiOperation({ summary: 'Atualiza todos os campos de um produto' })
   update(
     @Param('id') id: number,
     @Body() updatedProduct: UpdateProdutoDto,
@@ -63,6 +79,21 @@ export class ProdutosController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @ApiResponse({
+    status: 201,
+    description: 'Produto cadastrado com sucesso',
+    type: ProdutoDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso proibido. Você não tem permissão para acessar esse recurso',
+  })
   @ApiOperation({ summary: 'Atualiza parcialmente um produto' })
   partialUpdate(
     @Param('id', ParseIntPipe) id: number,
@@ -72,19 +103,49 @@ export class ProdutosController {
   }
 
   @Patch(':id/categoria')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiResponse({
+    status: 201,
+    description: 'Produto cadastrado com sucesso',
+    type: ProdutoDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso proibido. Você não tem permissão para acessar esse recurso',
+  })
   async updateCategoria(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProdutoCategoriaDto,
   ) {
-    return await this.produtoService.updateCategoria(id, dto.idCategoria
-      
-    );
+    return await this.produtoService.updateCategoria(id, dto.idCategoria);
   }
 
   @Delete(':id')
   @HttpCode(204)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @ApiResponse({
+    status: 201,
+    description: 'Produto cadastrado com sucesso',
+    type: ProdutoDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso proibido. Você não tem permissão para acessar esse recurso',
+  })
   delete(@Param('id') id: number): Promise<void> {
     return this.produtoService.delete(id);
   }
@@ -94,12 +155,17 @@ export class ProdutosController {
   @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Criação de um novo produto (Apenas Admnistradores)',
+    summary: 'Criação de um novo produto (Apenas Administradores)',
   })
   @ApiResponse({
     status: 201,
     description: 'Produto cadastrado com sucesso',
     type: ProdutoDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
   })
   @ApiResponse({
     status: 401,
@@ -118,6 +184,21 @@ export class ProdutosController {
   @Post(':id/image')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  @ApiResponse({
+    status: 201,
+    description: 'Produto cadastrado com sucesso',
+    type: ProdutoDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso proibido. Você não tem permissão para acessar esse recurso',
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
