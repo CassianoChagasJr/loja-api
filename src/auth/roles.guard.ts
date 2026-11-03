@@ -21,8 +21,8 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { usuario } = context.switchToHttp().getRequest();
-    if (!usuario?.perfil || !funcoesNecessarias.includes(usuario.perfil)) {
+    const { user } = context.switchToHttp().getRequest();
+    if (!user?.perfil || !funcoesNecessarias.includes(user.perfil)) {
       throw new ForbiddenException(
         'Acesso negado: Você não tem permissão para acessar esse recurso',
       );
