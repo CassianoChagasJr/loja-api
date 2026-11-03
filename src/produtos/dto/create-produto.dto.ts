@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNumber, IsString, Min, MinLength } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateProdutoDto {
   @ApiProperty({
@@ -7,18 +14,31 @@ export class CreateProdutoDto {
     example: 'Produto A',
     minLength: 3,
   })
-  @IsString()
-  @MinLength(3)
+  @IsNotEmpty({
+    message: 'O nome do produto é obrigatório e não pode ficar vazio ',
+  })
+  @IsString({ message: 'O nome do produto deve ser um texto válido' })
+  @MinLength(3, {
+    message: 'O nome do produto deve ter no mínimo 3 caracteres',
+  })
   nome: string;
 
   @ApiProperty({
     description: 'Preço do produto ',
-    example: 25.50,
+    example: 25.5,
     minimum: 0.01,
     required: true,
   })
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
+  @IsNotEmpty({
+    message: 'O preço do produto é obrigatório e não pode ficar vazio ',
+  })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message: 'O preço deve ser um número válido com ate duas casas decimais',
+    },
+  )
+  @Min(0.01, { message: 'O preço deve ser de pelo menos R$ 0.01' })
   preco: number;
 
   @ApiProperty({
@@ -27,7 +47,10 @@ export class CreateProdutoDto {
     minimum: 0,
     required: true,
   })
-  @IsInt()
-  @Min(0)
+  @IsNotEmpty({
+    message: 'O estoque do produto é obrigatório e não pode ficar vazio ',
+  })
+  @IsInt({ message: 'O estoque deve ser um número inteiro' })
+  @Min(0, { message: 'O valor do estoque não pode ser um número negativo' })
   estoque: number;
 }
