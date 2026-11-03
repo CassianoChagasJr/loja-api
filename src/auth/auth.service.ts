@@ -8,6 +8,7 @@ import { Usuario } from './user.entity.js';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { IsEmail } from 'class-validator';
 
 @Injectable()
 export class AuthService {
@@ -66,6 +67,21 @@ export class AuthService {
 
     return {
       acesso_token: await this.jwtService.signAsync(payload),
+    };
+  }
+
+  async me(id: number) {
+    const usuario = await this.usuarioRepository.findOne({ where: { id } });
+
+    if (!usuario) {
+      throw new UnauthorizedException('usuário não encontrado');
+    }
+
+    return {
+      usuarioId: usuario.id,
+      username: usuario.username,
+      email: usuario.email,
+      perfil: usuario.perfil,
     };
   }
 }
