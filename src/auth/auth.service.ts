@@ -98,4 +98,33 @@ export class AuthService {
       perfil: usuario.perfil,
     };
   }
+
+  async refresh(refreshToken: string) {
+    let payload: { sub: number };
+    try {
+      payload = await this.jwtService.verifyAsync<{ sub: number }>(
+        refreshToken,
+        { secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET') },
+      );
+    } catch {
+      throw new UnauthorizedException('refresh token inválido ou expirado');
+    }
+
+    const usuario = await this.usuarioRepository.findOne({
+      where: { id: payload.sub },
+    });
+    if (!usuario) {
+      throw new UnauthorizedException('usuário não encontrado');
+    }
+
+    const novoPayload = {
+      sub: usuario.id,
+      username: usuario.username,
+      perfil: usuario.perfil,
+    };
+
+    return {
+      acesso_token: await this.jwtService.signAsync(novoPayload),
+    };
+  }
 }
