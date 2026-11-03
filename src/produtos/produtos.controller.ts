@@ -40,7 +40,9 @@ export class ProdutosController {
 
   @Get()
   findAll(@Query() query: ListaProdutosQueryDto): Promise<ProdutoDto[]> {
-    return query.q || query.minPrice || query.maxPrice
+    return query.q != undefined ||
+      query.minPrice != undefined ||
+      query.maxPrice != undefined
       ? this.produtoService.findQuery(query)
       : this.produtoService.findAll();
   }
@@ -52,7 +54,7 @@ export class ProdutosController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'MANAGER')
   @ApiResponse({
     status: 201,
     description: 'Produto cadastrado com sucesso',
@@ -68,7 +70,10 @@ export class ProdutosController {
     description:
       'Acesso proibido. Você não tem permissão para acessar esse recurso',
   })
-  @ApiOperation({ summary: 'Atualiza todos os campos de um produto' })
+  @ApiOperation({
+    summary:
+      'Atualiza todos os campos de um produto. Apenas administradores ou gerentes tem permissão',
+  })
   update(
     @Param('id') id: number,
     @Body() updatedProduct: UpdateProdutoDto,
@@ -78,7 +83,7 @@ export class ProdutosController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'MANAGER')
   @ApiResponse({
     status: 201,
     description: 'Produto cadastrado com sucesso',
@@ -94,7 +99,10 @@ export class ProdutosController {
     description:
       'Acesso proibido. Você não tem permissão para acessar esse recurso',
   })
-  @ApiOperation({ summary: 'Atualiza parcialmente um produto' })
+  @ApiOperation({
+    summary:
+      'Atualiza parcialmente um produto. Apenas administradores ou gerentes tem permissão',
+  })
   partialUpdate(
     @Param('id', ParseIntPipe) id: number,
     @Body() patchProdutoDto: PatchProdutoDto,

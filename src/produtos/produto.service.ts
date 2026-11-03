@@ -13,12 +13,16 @@ import { Produto } from './produto.entity.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PatchProdutoDto } from './dto/patch-produto.dto.js';
 import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
+import { Categoria } from '../categorias/entities/categoria.entity.js';
 
 @Injectable()
 export default class ProdutoService {
   constructor(
+    
     @InjectRepository(Produto)
     private readonly produtoRepository: Repository<Produto>,
+    @InjectRepository(Categoria)
+    private readonly categoriaRepository: Repository<Categoria>
   ) {}
 
   findAll(): Promise<Produto[]> {
@@ -26,9 +30,9 @@ export default class ProdutoService {
   }
 
   async findById(id: number): Promise<Produto> {
-    let produto = await this.produtoRepository.findOne({ where: { id } });
+    const produto = await this.produtoRepository.findOne({ where: { id } });
     if (!produto)
-      throw new NotFoundException(`Produto com ID ${id} não encontrado`);
+      throw new NotFoundException(`Produto com id: ${id} não encontrado`);
     return produto;
   }
 
@@ -40,13 +44,12 @@ export default class ProdutoService {
     if (q) {
       whereConditions.nome = ILike(`%${q}%`);
     }
-
     // 2. Filtro dinâmico por preço
-    if (minPrice && maxPrice) {
+    if (minPrice !=  undefined && maxPrice != undefined) {
       whereConditions.preco = Between(minPrice, maxPrice);
-    } else if (minPrice) {
+    } else if (minPrice != undefined) {
       whereConditions.preco = MoreThanOrEqual(minPrice);
-    } else if (maxPrice) {
+    } else if (maxPrice != undefined) {
       whereConditions.preco = LessThanOrEqual(maxPrice);
     }
 
@@ -61,17 +64,20 @@ export default class ProdutoService {
   ): Promise<Produto> {
     const produto = await this.produtoRepository.findOne({ where: { id } });
     if (!produto)
-      throw new NotFoundException(`Produto com id ${id} não encontrado`);
+      throw new NotFoundException(`Produto com id: ${id} não encontrado`);
     Object.assign(produto, updatedProduct);
-    console.log(produto);
     return this.produtoRepository.save(produto);
   }
 
   async updateCategoria(id: number, idCategoria: number): Promise<Produto> {
     const produto = await this.produtoRepository.findOne({ where: { id } });
+    const categoria = await this.categoriaRepository.findOne({where: {id}})
 
     if (!produto) {
-      throw new NotFoundException(`Produto com ID: ${id} não encontrado`);
+      throw new NotFoundException(`Produto com id: ${id} não encontrado`);
+    }
+    if(!categoria){
+      throw new NotFoundException(`Categoria com id: ${id} não encontrada`)
     }
 
     produto.idCategoria = idCategoria;
@@ -92,7 +98,7 @@ export default class ProdutoService {
   async updateImageFileName(id: number, filename: string) {
     const produto = await this.produtoRepository.findOne({ where: { id } });
     if (!produto) {
-      throw new NotFoundException(` Produto com ID: ${id} não encontrado`);
+      throw new NotFoundException(`Produto com id: ${id} não encontrado`);
     }
     produto.imageFileName = filename;
     return this.produtoRepository.save(produto);
