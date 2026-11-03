@@ -38,7 +38,14 @@ import { UpdateProdutoCategoriaDto } from './dto/update-produto-categoria.dto.js
 export class ProdutosController {
   constructor(private readonly produtoService: ProdutoService) {}
 
+  
   @Get()
+  @ApiOperation({ summary: 'Retorna todos os produtos cadastrados' })
+  @ApiResponse({
+    status: 201,
+    description: 'Produto cadastrado com sucesso',
+    type: ProdutoDto,
+  })
   findAll(@Query() query: ListaProdutosQueryDto): Promise<ProdutoDto[]> {
     return query.q != undefined ||
       query.minPrice != undefined ||
@@ -47,7 +54,9 @@ export class ProdutosController {
       : this.produtoService.findAll();
   }
 
+  
   @Get(':id')
+  @ApiOperation({summary: 'Retorna um produto cadastrado por um id'})
   findById(@Param('id') id: number): Promise<ProdutoDto> {
     return this.produtoService.findById(id);
   }
@@ -136,7 +145,6 @@ export class ProdutosController {
   }
 
   @Delete(':id')
-  @HttpCode(204)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiResponse({
