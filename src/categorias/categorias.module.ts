@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Categoria } from './entities/categoria.entity.js';
 
 @Module({
+  // Libera o Repository<Categoria> para injeção no service
   imports: [TypeOrmModule.forFeature([Categoria])],
   controllers: [CategoriasController],
   providers: [CategoriasService],

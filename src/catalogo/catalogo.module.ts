@@ -4,9 +4,9 @@ import { CatalogoController } from './catalogo.controller.js';
 import { ProdutosModule } from '../produtos/produtos.module.js';
 
 @Module({
-  imports:[ProdutosModule],
+  // ProdutosModule exporta o ProdutoService, usado no resumo
+  imports: [ProdutosModule],
   controllers: [CatalogoController],
-  providers: [CatalogoService]
-  
+  providers: [CatalogoService],
 })
 export class CatalogoModule {}

@@ -12,7 +12,10 @@ import { RolesGuard } from './roles.guard.js';
 
 @Module({
   imports: [
+    // Libera o Repository<Usuario>
     TypeOrmModule.forFeature([Usuario]),
+    // Configura o JwtService com o segredo e a validade do ACESSO_TOKEN (.env).
+    // registerAsync: espera o ConfigService para ler as variáveis
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,10 +27,12 @@ import { RolesGuard } from './roles.guard.js';
         },
       }),
     }),
+    // Passport com a estratégia "jwt" como padrão
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
+  // Exporta os guards para os outros módulos usarem nas rotas protegidas
   exports: [AuthService, JwtModule, PassportModule, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

@@ -7,9 +7,15 @@ import { AuthModule } from '../auth/auth.module.js';
 import { Categoria } from '../categorias/entities/categoria.entity.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Produto, Categoria]), AuthModule],
+  imports: [
+    // Produto e Categoria: o service valida a categoria antes de associar
+    TypeOrmModule.forFeature([Produto, Categoria]),
+    // Guards de autenticação/papel usados no controller
+    AuthModule,
+  ],
   controllers: [ProdutosController],
   providers: [ProdutoService],
-  exports: [ProdutoService]
+  // Exporta o service para o CatalogoModule (resumo do catálogo)
+  exports: [ProdutoService],
 })
 export class ProdutosModule {}
