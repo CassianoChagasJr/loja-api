@@ -3,31 +3,29 @@ import { EnderecoService } from './endereco.service.js';
 
 @Controller('endereco')
 export class EnderecoController {
+  constructor(private readonly enderecoService: EnderecoService) {}
 
-    constructor(private readonly enderecoService: EnderecoService) {}
+  @Get()
+  findAllEndereco() {
+    return this.enderecoService.findAllEnderecoForUser();
+  }
+  @Post()
+  createEndereco() {
+    return this.enderecoService.createEndereco();
+  }
 
+  @Put('endereco/:id')
+  updateEndereco() {
+    return this.enderecoService.updateEndereco();
+  }
 
-    @Get('endereco')
-    findAllEndereco() {
-        return this.enderecoService.findAllEnderecoForUser();
-    }
-    @Post('endereco')
-    createEndereco() {
-        return this.enderecoService.createEndereco();
-    }
+  @Delete('endereco/:id')
+  deleteEndereco() {
+    return this.enderecoService.deleteEndereco();
+  }
 
-    @Put('endereco/:id')
-    updateEndereco() {
-        return this.enderecoService.updateEndereco();
-    }
-
-    @Delete('endereco/:id')
-    deleteEndereco() {
-        return this.enderecoService.deleteEndereco();
-    }
-
-    @Patch('endereco/:id')
-    patchEndereco() {
-        return this.enderecoService.patchEndereco();
-    }
+  @Patch('endereco/:id')
+  patchEndereco() {
+    return this.enderecoService.patchEndereco();
+  }
 }
