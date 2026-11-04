@@ -537,7 +537,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X DELETE $B/pagamentos/1 -H "Authoriza
 | Ferramenta | Onde ajudou | O que eu fiz / mudei |
 |---|---|---|
 | **Claude (Anthropic)**, via Claude Code | **Endereço** e `PATCH /orders/:id/endereco`: orientação passo a passo (quais arquivos, decorators e métodos usar e por quê). | Escrevi o código do pacote Endereço; a IA revisou e apontou erros (principalmente de digitação e o guard que faltava no controller). Decidi manter os nomes em português e a política 404. |
-| | **Pagamento**: o pacote foi gerado com orientação do Claude (entidade, DTOs, service, controller, módulo), a partir de um desenho de regras discutido antes. | Revisei, testei as regras (pagamento ativo duplicado, transação PAGO, 403/404) e estudei o código comentado para explicar. |
+| | **Pagamento**: o pacote foi gerado com orientação passo a passo (entidade, DTOs, service, controller, módulo), a partir de um desenho de regras discutido antes. | Revisei, testei as regras (pagamento ativo duplicado, transação PAGO, 403/404) e estudei o código comentado para explicar. |
 | | Swagger das rotas A, ajuste do `PatchProdutoDto` para `PartialType(CreateProdutoDto)`, adaptação do seed ao schema em português e coleção de testes do Postman. | Conferi as rotas e os status contra o código e rodei os testes. |
 | | **Este README foi escrito pelo Claude**, a partir do código e da avaliação disponibilizada pelo professor Josino. | Revisei o conteúdo e esta seção. |
 | | **Comentários no código**: o Claude comentou todos os arquivos de `src/` (o que cada rota faz, quem pode chamar e a ordem dos erros). | Os comentários serão usados para orientação e boas práticas de desenvolvimento |
