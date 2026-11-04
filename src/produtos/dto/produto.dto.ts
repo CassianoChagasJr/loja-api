@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsNumber, IsString, Min, MinLength } from 'class-validator';
 
+// Formato de RESPOSTA de produto (usado como "type" no Swagger e no retorno do controller)
 export class ProdutoDto {
   @ApiProperty({ example: 1 })
   @IsInt()

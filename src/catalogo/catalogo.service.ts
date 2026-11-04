@@ -1,24 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import ProdutoService from '../produtos/produto.service.js';
 
+// GET /catalogo/summary (cap. 3)
 @Injectable()
 export class CatalogoService {
-  // Injeta o serviço de produtos usando a Injeção de Dependência (DI)
+  // ProdutoService vem do ProdutosModule (exports), por injeção de dependência
   constructor(private readonly produtoService: ProdutoService) {}
 
   async getSummary() {
-    // Busca todos os produtos do banco usando o método que você já foi criado
+    // Reaproveita o findAll do ProdutoService (não acessa o banco direto)
     const produtos = await this.produtoService.findAll();
 
-    // Calcula o total de unidades somando o estoque de cada produto
+    // reduce: soma o estoque de todos os produtos, começando de 0
     const unidadesTotaisEstoque = produtos.reduce(
       (sum, item) => sum + item.estoque,
       0,
     );
 
     return {
-      produtosTotaisCadastrados: produtos.length, // Quantidade de registros na tabela
-      unidadesTotaisEmEstoque: unidadesTotaisEstoque, // Soma de todo o estoque
+      produtosTotaisCadastrados: produtos.length, // quantidade de produtos
+      unidadesTotaisEmEstoque: unidadesTotaisEstoque, // soma de todo o estoque
     };
   }
 }

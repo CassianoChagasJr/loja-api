@@ -8,6 +8,8 @@ import {
   MinLength,
 } from 'class-validator';
 
+// Body do POST /produtos. Cada regra tem mensagem própria (devolvida no 400).
+// O PatchProdutoDto reaproveita estas validações com PartialType.
 export class CreateProdutoDto {
   @ApiProperty({
     description: 'Nome do produto ',

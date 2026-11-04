@@ -41,11 +41,15 @@ import { PatchProdutoDto } from './dto/patch-produto.dto.js';
 import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
 import { UpdateProdutoCategoriaDto } from './dto/update-produto-categoria.dto.js';
 
+// O controller NÃO tem regra de negócio: pega dados da requisição e chama o service.
+// Quem pode chamar cada rota: @UseGuards(JwtAuthGuard, RolesGuard) + @Roles(...).
+// JwtAuthGuard roda primeiro (sem token -> 401); RolesGuard depois (papel errado -> 403).
 @ApiTags('produtos')
 @Controller('produtos')
 export class ProdutosController {
   constructor(private readonly produtoService: ProdutoService) {}
 
+  // GET /produtos  (público)  ?q=&minPrice=&maxPrice= opcionais
   @Get()
   @ApiOperation({
     summary: 'Lista os produtos (filtros opcionais: q, minPrice, maxPrice)',
@@ -58,6 +62,7 @@ export class ProdutosController {
   })
   @ApiResponse({ status: 400, description: 'Filtro inválido' })
   findAll(@Query() query: ListaProdutosQueryDto): Promise<ProdutoDto[]> {
+    // Com algum filtro -> findQuery; sem filtro -> findAll
     return query.q != undefined ||
       query.minPrice != undefined ||
       query.maxPrice != undefined
@@ -65,6 +70,7 @@ export class ProdutosController {
       : this.produtoService.findAll();
   }
 
+  // GET /produtos/:id  (público)
   @Get(':id')
   @ApiOperation({ summary: 'Retorna um produto cadastrado por um id' })
   @ApiResponse({
@@ -73,13 +79,15 @@ export class ProdutosController {
     type: ProdutoDto,
   })
   @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  // ParseIntPipe: converte o ":id" para número; "abc" -> 400
   findById(@Param('id', ParseIntPipe) id: number): Promise<ProdutoDto> {
     return this.produtoService.findById(id);
   }
 
+  // PUT /produtos/:id  (ADMIN ou MANAGER) — substitui todos os campos
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER')
+  @Roles('ADMIN', 'MANAGER') // cap. 7: MANAGER pode editar
   @ApiBearerAuth()
   @ApiOperation({
     summary:
@@ -109,6 +117,7 @@ export class ProdutosController {
     return this.produtoService.update(id, updatedProduct);
   }
 
+  // PATCH /produtos/:id  (ADMIN ou MANAGER) — só os campos enviados (cap. 2)
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
@@ -141,6 +150,7 @@ export class ProdutosController {
     return this.produtoService.update(id, patchProdutoDto);
   }
 
+  // PATCH /produtos/:id/categoria  (só ADMIN)  body: { "idCategoria": 1 }
   @Patch(':id/categoria')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
@@ -174,8 +184,9 @@ export class ProdutosController {
     return await this.produtoService.updateCategoria(id, dto.idCategoria);
   }
 
+  // DELETE /produtos/:id  (só ADMIN; MANAGER -> 403)
   @Delete(':id')
-  @HttpCode(204)
+  @HttpCode(204) // sucesso sem corpo
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
@@ -196,6 +207,7 @@ export class ProdutosController {
     return this.produtoService.delete(id);
   }
 
+  // POST /produtos  (só ADMIN)  body: { nome, preco, estoque }
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
@@ -223,6 +235,7 @@ export class ProdutosController {
     return this.produtoService.create(createProdutos);
   }
 
+  // POST /produtos/:id/image  (só ADMIN)  multipart com o campo "file"
   @Post(':id/image')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
@@ -251,8 +264,10 @@ export class ProdutosController {
       'Acesso proibido. Você não tem permissão para acessar esse recurso',
   })
   @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  // FileInterceptor lê UM arquivo do campo "file" e salva em disco
   @UseInterceptors(
     FileInterceptor('file', {
+      // Salva em ./uploads com nome único: timestamp + nome original sem espaços
       storage: diskStorage({
         destination: './uploads',
         filename: (_req, file, callback) => {
@@ -260,7 +275,8 @@ export class ProdutosController {
           callback(null, `${Date.now()} - ${safe}`);
         },
       }),
-      limits: { fileSize: 2 * 1024 * 1024 },
+      limits: { fileSize: 2 * 1024 * 1024 }, // máximo 2 MB
+      // Só aceita imagens; tipo inválido -> arquivo descartado (file fica undefined)
       fileFilter: (_req, file, callback) => {
         const ok = ['image/jpeg', 'image/png', 'image/webp'].includes(
           file.mimetype,
@@ -276,6 +292,7 @@ export class ProdutosController {
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    // Sem arquivo (ou descartado pelo fileFilter) -> 400
     if (!file) {
       throw new BadRequestException(`Envie o campo file (jpeg/png/web)`);
     }
@@ -283,6 +300,7 @@ export class ProdutosController {
     return { produtoId: id, imageUrl: `/produtos/${id}/image` };
   }
 
+  // GET /produtos/:id/image  (público) — devolve o arquivo da imagem
   @Get(':id/image')
   @ApiOperation({ summary: 'Baixa a imagem do produto' })
   @ApiResponse({ status: 200, description: 'Arquivo da imagem' })
@@ -296,6 +314,7 @@ export class ProdutosController {
     if (!existsSync(caminho)) {
       throw new NotFoundException(`Imagem não encontrada`);
     }
+    // Envia o arquivo em partes (stream) direto para a resposta
     createReadStream(caminho).pipe(res);
   }
 }

@@ -146,7 +146,7 @@ http://localhost:3000/api
 | 2 | GET | `/produtos?q=&minPrice=&maxPrice=` | público |
 | 2 / 2.1 | PATCH | `/produtos/:id` (`PatchProdutoDto` = `PartialType(CreateProdutoDto)`) | ADMIN ou MANAGER |
 | 3 | GET | `/catalogo/summary` | público |
-| 5.1 | PATCH | `/orders/:id/status` | JWT (dono ou ADMIN) |
+| 5.1 | PATCH | `/orders/:id/status` | JWT (`CANCELADO`: dono ou ADMIN; `PAGO`: só ADMIN) |
 | 6 | GET | `/auth/me` | JWT |
 | 6 | POST | `/auth/refresh` | refresh_token no body |
 | 7 | — | papel `MANAGER` (ver [matriz](#matriz-de-papéis)) | — |
@@ -195,6 +195,7 @@ http://localhost:3000/api
 | Criar pedido | 401 | ✅ | ✅ | ✅ |
 | Listar pedidos | 401 | só os seus | **todos** | todos |
 | Cancelar / mudar status de pedido de outro | 401 | 404 | **403** | ✅ |
+| Marcar pedido como PAGO por `PATCH /orders/:id/status` | 401 | **403** | **403** | ✅ |
 | Endereços | 401 | só os seus | só os seus | só os seus |
 | Ligar endereço / pagar pedido de outro | 401 | 404 | 403 | 403 |
 | Listar pagamentos | 401 | só os seus | só os seus | **todos** |
@@ -224,6 +225,7 @@ http://localhost:3000/api
 ### Pedidos (cap. 5.1)
 - Criar pedido desconta o estoque dentro de uma transação. Se o estoque for insuficiente → **400** `Estoque insuficiente para o produto X. Quantidade em estoque: N`.
 - Status: `ABERTO → PAGO` ou `ABERTO → CANCELADO`. **Pedido PAGO não pode ser cancelado** (400).
+- **Quem marca PAGO:** o cliente quita pelo pacote Pagamento (`PATCH /pagamentos/:id/status`), que muda o pedido na mesma transação. Em `PATCH /orders/:id/status`, só o **ADMIN** pode usar `PAGO` (ajuste manual da loja); CLIENTE e MANAGER recebem **403**. Sem essa regra, o cliente marcaria o pedido como pago sem criar pagamento, e um pagamento `PENDENTE` ficaria preso.
 - Cancelar devolve o estoque dos itens.
 - MANAGER vê todos os pedidos, mas só ADMIN altera ou cancela pedido de outro usuário.
 
@@ -417,8 +419,13 @@ curl -s $B/catalogo/summary
 ```bash
 # pedido novo do cli (id 2 após o bloco P)
 curl -s -X POST $B/orders -H "Authorization: Bearer $TOKEN_CLI" -H "$J" -d '{"itens":[{"idProduto":2,"quantidade":1}]}'
-curl -s -X PATCH $B/orders/2/status -H "Authorization: Bearer $TOKEN_CLI" -H "$J" -d '{"status":"PAGO"}'       # 200
-curl -s -X PATCH $B/orders/2/status -H "Authorization: Bearer $TOKEN_CLI" -H "$J" -d '{"status":"CANCELADO"}'  # 400: pago não cancela
+# cli (dono) tenta marcar PAGO na mão → 403 (o cliente paga pelo pacote Pagamento)
+curl -s -o /dev/null -w '%{http_code}
+' -X PATCH $B/orders/2/status -H "Authorization: Bearer $TOKEN_CLI" -H "$J" -d '{"status":"PAGO"}'
+# ana (ADMIN) marca PAGO → 200
+curl -s -X PATCH $B/orders/2/status -H "Authorization: Bearer $TOKEN_ANA" -H "$J" -d '{"status":"PAGO"}'
+# cli tenta cancelar o pedido já PAGO → 400
+curl -s -X PATCH $B/orders/2/status -H "Authorization: Bearer $TOKEN_CLI" -H "$J" -d '{"status":"CANCELADO"}'
 # estoque insuficiente → 400 com mensagem de domínio
 curl -s -X POST $B/orders -H "Authorization: Bearer $TOKEN_CLI" -H "$J" -d '{"itens":[{"idProduto":1,"quantidade":9999}]}'
 ```
@@ -496,7 +503,10 @@ curl -s -o /dev/null -w '%{http_code}\n' -X DELETE $B/pagamentos/1 -H "Authoriza
 |---|---|---|
 | **Claude (Anthropic)**, via Claude Code | **Endereço** e `PATCH /orders/:id/endereco`: orientação passo a passo (quais arquivos, decorators e métodos usar e por quê). | Escrevi o código do pacote Endereço; a IA revisou e apontou erros (principalmente de digitação e o guard que faltava no controller). Decidi manter os nomes em português e a política 404. |
 | | **Pagamento**: o pacote foi **gerado pela IA** (entidade, DTOs, service, controller, módulo), a partir de um desenho de regras discutido antes. | Revisei, testei as regras (pagamento ativo duplicado, transação PAGO, 403/404) e estudei o código comentado para explicar. |
-| | Swagger das rotas A, ajuste do `PatchProdutoDto` para `PartialType(CreateProdutoDto)`, adaptação do seed ao schema em português, coleção de testes do Postman e rascunho deste README. | Conferi as rotas e os status contra o código e rodei os testes. |
+| | Swagger das rotas A, ajuste do `PatchProdutoDto` para `PartialType(CreateProdutoDto)`, adaptação do seed ao schema em português e coleção de testes do Postman. | Conferi as rotas e os status contra o código e rodei os testes. |
+| | **Este README foi escrito pelo Claude**, a partir do código e da avaliação. | Revisei o conteúdo e esta seção. |
+| | **Comentários no código**: o Claude comentou todos os arquivos de `src/` (o que cada rota faz, quem pode chamar e a ordem dos erros). | Usei os comentários para estudar e explicar o código. |
+| | Revisão geral, com correções: `ParseIntPipe` em `GET/PUT/DELETE /produtos/:id` (antes `abc` dava 500); `PATCH /produtos/:id/categoria` buscava a categoria pelo id do produto; regra "só ADMIN marca PAGO em `PATCH /orders/:id/status`". | Decidi aplicar as correções e testei os casos. |
 | | Features A anteriores (refresh, status do pedido, MANAGER, categorias): orientação passo a passo e revisão. | Escrevi o código e testei cada rota (200/400/401/403/404). |
 | **GitHub Copilot** | Sugestões de autocompletar no editor. | Aceitei ou descartei as sugestões conforme o código. |
 

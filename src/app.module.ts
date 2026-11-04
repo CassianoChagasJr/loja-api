@@ -11,12 +11,13 @@ import { CategoriasModule } from './categorias/categorias.module.js';
 import { EnderecoModule } from './endereco/endereco.module.js';
 import { PagamentosModule } from './pagamentos/pagamentos.module.js';
 
-//parei no video 31 de Josino - upload de arquivos
-
+// Módulo raiz: junta a configuração, o banco e todos os módulos de funcionalidade
 @Module({
   imports: [
     ProdutosModule,
+    // Lê o .env e deixa o ConfigService disponível em toda a aplicação
     ConfigModule.forRoot({ isGlobal: true }),
+    // Conexão com o Postgres usando as variáveis DB_* do .env
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -26,8 +27,10 @@ import { PagamentosModule } from './pagamentos/pagamentos.module.js';
         username: config.get('DB_USERNAME'),
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_DATABASE'),
+        // Registra automaticamente as entidades dos forFeature de cada módulo
         autoLoadEntities: true,
-        synchronize: true, //cuidado com isso em produção, usar so em desenvolvimento
+        // Cria/atualiza as tabelas a partir das entidades. Só em desenvolvimento
+        synchronize: true,
       }),
     }),
     OrdersModule,
@@ -41,5 +44,3 @@ import { PagamentosModule } from './pagamentos/pagamentos.module.js';
   providers: [AppService],
 })
 export class AppModule {}
-
-

@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service.js';
 
+// Rotas de saúde da API (públicas), sem regra de negócio
 @ApiTags('health')
 @Controller()
 export class AppController {
@@ -20,6 +21,7 @@ export class AppController {
     return { status: 'ok' };
   }
 
+  // Cap. 1: nome e versão (constante no AppService)
   @Get('health/version')
   @ApiOperation({ summary: 'Nome e versão da API' })
   @ApiResponse({

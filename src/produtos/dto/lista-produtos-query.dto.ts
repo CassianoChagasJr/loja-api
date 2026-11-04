@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
+// Query string do GET /produtos?q=caneca&minPrice=10&maxPrice=50 (todos opcionais)
 export class ListaProdutosQueryDto {
   @ApiPropertyOptional({ description: 'Trecho do nome', example: 'caneca' })
   @IsOptional()
@@ -9,6 +10,7 @@ export class ListaProdutosQueryDto {
   q?: string;
 
   @ApiPropertyOptional({ example: 10 })
+  // Tudo na URL chega como texto; @Type converte para número antes de validar
   @Type(() => Number)
   @IsOptional()
   @IsNumber({}, { message: 'O preço mínimo deve ser um número' })

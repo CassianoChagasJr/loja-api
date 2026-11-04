@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CatalogoService } from './catalogo.service.js';
 
+// GET /catalogo/summary (público): o controller só repassa ao service
 @ApiTags('catalogo')
 @Controller('catalogo')
 export class CatalogoController {

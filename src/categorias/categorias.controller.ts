@@ -22,12 +22,16 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+// O controller NÃO tem regra de negócio: pega dados da requisição e chama o service.
+// Leitura é pública; criar/editar/apagar exigem token (401) e perfil ADMIN (403).
 @ApiTags('categorias')
 @Controller('categorias')
 export class CategoriasController {
   constructor(private readonly categoriasService: CategoriasService) {}
 
+  // POST /categorias  (só ADMIN)  body: { "nome": "Canecas" }
   @Post()
+  // JwtAuthGuard: quem é (401); RolesGuard: pode? (403)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
@@ -48,6 +52,7 @@ export class CategoriasController {
     return this.categoriasService.createCategoria(createCategoriaDto);
   }
 
+  // GET /categorias  (público)
   @Get()
   @ApiOperation({ summary: 'Retorna as categorias existentes' })
   @ApiResponse({ status: 200, description: 'Lista de categorias' })
@@ -55,6 +60,7 @@ export class CategoriasController {
     return this.categoriasService.findAll();
   }
 
+  // GET /categorias/:id  (público)
   @Get(':id')
   @ApiOperation({ summary: 'Retorna uma categoria por id' })
   @ApiResponse({ status: 200, description: 'Categoria encontrada' })
@@ -63,6 +69,7 @@ export class CategoriasController {
     return this.categoriasService.findCategoriaById(id);
   }
 
+  // GET /categorias/:id/produtos  (público) — listar produtos de uma categoria
   @Get(':id/produtos')
   @ApiOperation({ summary: 'Retorna a categoria com os seus produtos' })
   @ApiResponse({
@@ -74,6 +81,7 @@ export class CategoriasController {
     return this.categoriasService.findProductsByCategory(id);
   }
 
+  // PATCH /categorias/:id  (só ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
@@ -99,6 +107,7 @@ export class CategoriasController {
     return this.categoriasService.updateCategoria(id, updateCategoriaDto);
   }
 
+  // DELETE /categorias/:id  (só ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()

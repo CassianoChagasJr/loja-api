@@ -5,14 +5,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Categoria } from './entities/categoria.entity.js';
 import { Repository } from 'typeorm';
 
+// Regras de categoria. "Só ADMIN muta" é garantido no controller (RolesGuard + @Roles).
 @Injectable()
 export class CategoriasService {
   constructor(
+    // Acesso à tabela categorias (liberado pelo forFeature no módulo)
     @InjectRepository(Categoria)
     private readonly categoriaRepository: Repository<Categoria>,
   ) {}
 
-  // Cria uma nova categoria
+  // POST /categorias -> cria uma categoria
   async createCategoria(
     createCategoriaDto: CreateCategoriaDto,
   ): Promise<Categoria> {
@@ -20,11 +22,12 @@ export class CategoriasService {
     return await this.categoriaRepository.save(novaCategoria);
   }
 
-  // Lista todas as categorias cadastradas
+  // GET /categorias -> lista todas
   async findAll(): Promise<Categoria[]> {
     return await this.categoriaRepository.find();
   }
 
+  // GET /categorias/:id -> 404 se não existir
   async findCategoriaById(id: number): Promise<Categoria> {
     const categoria = await this.categoriaRepository.findOne({ where: { id } });
     if (!categoria) {
@@ -33,13 +36,14 @@ export class CategoriasService {
     return categoria;
   }
 
-  // Busca uma categoria específica junto com a lista de produtos (O que o desafio pede!)
+  // GET /categorias/:id/produtos -> categoria + lista dos seus produtos
   async findProductsByCategory(id: number): Promise<Categoria> {
     const categoria = await this.categoriaRepository.findOne({
       where: { id },
+      // Carrega a relação @OneToMany "produtos" (JOIN automático)
       relations: {
         produtos: true,
-      }, // Faz o JOIN automático com os produtos vinculados
+      },
     });
 
     if (!categoria) {
@@ -48,7 +52,7 @@ export class CategoriasService {
     return categoria;
   }
 
-  // Atualiza os dados de uma categoria (PUT)
+  // PATCH /categorias/:id -> atualiza só o que veio (UpdateCategoriaDto é parcial)
   async updateCategoria(
     id: number,
     updateCategoriaDto: UpdateCategoriaDto,
@@ -61,7 +65,8 @@ export class CategoriasService {
     return await this.categoriaRepository.save(categoria);
   }
 
-  // Deleta uma categoria
+  // DELETE /categorias/:id -> affected = 0 significa que nada foi apagado -> 404.
+  // Produtos da categoria ficam com idCategoria = null (onDelete SET NULL no Produto)
   async deleteCategoria(id: number): Promise<void> {
     const resultado = await this.categoriaRepository.delete(id);
     if (resultado.affected === 0) {
