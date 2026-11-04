@@ -1,4 +1,5 @@
 import { PartialType } from '@nestjs/swagger';
-import { UpdateProdutoDto } from './update-produto.dto.js';
+import { CreateProdutoDto } from './create-produto.dto.js';
 
-export class PatchProdutoDto extends PartialType(UpdateProdutoDto) {}
+// Cap. 2.1: mesmas validações do Create, mas todos os campos opcionais
+export class PatchProdutoDto extends PartialType(CreateProdutoDto) {}

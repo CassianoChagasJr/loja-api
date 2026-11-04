@@ -9,5 +9,6 @@ import { EnderecoModule } from '../endereco/endereco.module.js';
   imports: [TypeOrmModule.forFeature([Order, OrderItem]), EnderecoModule],
   controllers: [OrdersController],
   providers: [OrdersService],
+  exports: [OrdersService],
 })
 export class OrdersModule {}

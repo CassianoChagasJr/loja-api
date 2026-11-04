@@ -24,7 +24,14 @@ import ProdutoService from './produto.service.js';
 import { JwtAuthGuard } from '../auth/jwt.auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
@@ -34,17 +41,22 @@ import { PatchProdutoDto } from './dto/patch-produto.dto.js';
 import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
 import { UpdateProdutoCategoriaDto } from './dto/update-produto-categoria.dto.js';
 
+@ApiTags('produtos')
 @Controller('produtos')
 export class ProdutosController {
   constructor(private readonly produtoService: ProdutoService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Retorna todos os produtos cadastrados' })
-  @ApiResponse({
-    status: 201,
-    description: 'Produto cadastrado com sucesso',
-    type: ProdutoDto,
+  @ApiOperation({
+    summary: 'Lista os produtos (filtros opcionais: q, minPrice, maxPrice)',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de produtos',
+    type: ProdutoDto,
+    isArray: true,
+  })
+  @ApiResponse({ status: 400, description: 'Filtro inválido' })
   findAll(@Query() query: ListaProdutosQueryDto): Promise<ProdutoDto[]> {
     return query.q != undefined ||
       query.minPrice != undefined ||
@@ -55,18 +67,30 @@ export class ProdutosController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Retorna um produto cadastrado por um id' })
-  findById(@Param('id') id: number): Promise<ProdutoDto> {
+  @ApiResponse({
+    status: 200,
+    description: 'Produto encontrado',
+    type: ProdutoDto,
+  })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  findById(@Param('id', ParseIntPipe) id: number): Promise<ProdutoDto> {
     return this.produtoService.findById(id);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Atualiza todos os campos de um produto. Apenas administradores ou gerentes tem permissão',
+  })
   @ApiResponse({
-    status: 201,
-    description: 'Produto cadastrado com sucesso',
+    status: 200,
+    description: 'Produto atualizado',
     type: ProdutoDto,
   })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({
     status: 401,
     description:
@@ -77,12 +101,9 @@ export class ProdutosController {
     description:
       'Acesso proibido. Você não tem permissão para acessar esse recurso',
   })
-  @ApiOperation({
-    summary:
-      'Atualiza todos os campos de um produto. Apenas administradores ou gerentes tem permissão',
-  })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   update(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updatedProduct: UpdateProdutoDto,
   ): Promise<ProdutoDto> {
     return this.produtoService.update(id, updatedProduct);
@@ -91,11 +112,17 @@ export class ProdutosController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Atualiza parcialmente um produto. Apenas administradores ou gerentes tem permissão',
+  })
   @ApiResponse({
-    status: 201,
-    description: 'Produto cadastrado com sucesso',
+    status: 200,
+    description: 'Produto atualizado',
     type: ProdutoDto,
   })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({
     status: 401,
     description:
@@ -106,10 +133,7 @@ export class ProdutosController {
     description:
       'Acesso proibido. Você não tem permissão para acessar esse recurso',
   })
-  @ApiOperation({
-    summary:
-      'Atualiza parcialmente um produto. Apenas administradores ou gerentes tem permissão',
-  })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   partialUpdate(
     @Param('id', ParseIntPipe) id: number,
     @Body() patchProdutoDto: PatchProdutoDto,
@@ -120,11 +144,15 @@ export class ProdutosController {
   @Patch(':id/categoria')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @ApiResponse({
-    status: 201,
-    description: 'Produto cadastrado com sucesso',
-    type: ProdutoDto,
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Associa o produto a uma categoria (Apenas Administradores)',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Produto com a categoria atualizada',
+  })
+  @ApiResponse({ status: 400, description: 'idCategoria inválido' })
   @ApiResponse({
     status: 401,
     description:
@@ -134,6 +162,10 @@ export class ProdutosController {
     status: 403,
     description:
       'Acesso proibido. Você não tem permissão para acessar esse recurso',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Produto ou categoria não encontrado',
   })
   async updateCategoria(
     @Param('id', ParseIntPipe) id: number,
@@ -146,11 +178,9 @@ export class ProdutosController {
   @HttpCode(204)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @ApiResponse({
-    status: 201,
-    description: 'Produto cadastrado com sucesso',
-    type: ProdutoDto,
-  })
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove um produto (Apenas Administradores)' })
+  @ApiResponse({ status: 204, description: 'Produto removido' })
   @ApiResponse({
     status: 401,
     description:
@@ -161,7 +191,8 @@ export class ProdutosController {
     description:
       'Acesso proibido. Você não tem permissão para acessar esse recurso',
   })
-  delete(@Param('id') id: number): Promise<void> {
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.produtoService.delete(id);
   }
 
@@ -177,11 +208,7 @@ export class ProdutosController {
     description: 'Produto cadastrado com sucesso',
     type: ProdutoDto,
   })
-  @ApiResponse({
-    status: 400,
-    description:
-      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
-  })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({
     status: 401,
     description:
@@ -199,11 +226,20 @@ export class ProdutosController {
   @Post(':id/image')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @ApiResponse({
-    status: 201,
-    description: 'Produto cadastrado com sucesso',
-    type: ProdutoDto,
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Envia a imagem do produto (jpeg/png/webp, até 2 MB). Apenas Administradores',
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Imagem salva' })
+  @ApiResponse({ status: 400, description: 'Arquivo ausente ou tipo inválido' })
   @ApiResponse({
     status: 401,
     description:
@@ -214,6 +250,7 @@ export class ProdutosController {
     description:
       'Acesso proibido. Você não tem permissão para acessar esse recurso',
   })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -247,6 +284,9 @@ export class ProdutosController {
   }
 
   @Get(':id/image')
+  @ApiOperation({ summary: 'Baixa a imagem do produto' })
+  @ApiResponse({ status: 200, description: 'Arquivo da imagem' })
+  @ApiResponse({ status: 404, description: 'Imagem não encontrada' })
   async getImage(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
     const produto = await this.produtoService.findById(id);
     if (!produto || !produto.imageFileName) {
