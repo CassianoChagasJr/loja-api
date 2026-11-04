@@ -7,7 +7,7 @@
 -- Rodar a partir da pasta loja-api/ (Git Bash):
 --   docker exec -i loja-postgres psql -U loja -d loja -v ON_ERROR_STOP=1 < seed/seed.sql
 --
--- ATENÇÃO: apaga TODOS os dados (usuários, pedidos, endereços, pagamentos...).
+-- ATENÇÃO: apaga TODOS os dados (usuários, pedidos, endereços, pagamentos, galeria...).
 --
 -- Política: DELETE + ALTER SEQUENCE ... RESTART WITH 1 (ids voltam a 1),
 -- tudo dentro de uma transação: se qualquer comando falhar, nada é alterado.
@@ -19,6 +19,7 @@ DELETE FROM pagamentos;   -- FK pedidoId    -> orders
 DELETE FROM order_itens;  -- FK orderId     -> orders
 DELETE FROM orders;       -- FK enderecoId  -> enderecos
 DELETE FROM enderecos;
+DELETE FROM produto_imagens; -- FK produtoId -> produtos (galeria)
 DELETE FROM produtos;     -- FK idCategoria -> categorias
 DELETE FROM categorias;
 DELETE FROM users;
@@ -27,6 +28,7 @@ ALTER SEQUENCE pagamentos_id_seq  RESTART WITH 1;
 ALTER SEQUENCE order_itens_id_seq RESTART WITH 1;
 ALTER SEQUENCE orders_id_seq      RESTART WITH 1;
 ALTER SEQUENCE enderecos_id_seq   RESTART WITH 1;
+ALTER SEQUENCE produto_imagens_id_seq RESTART WITH 1;
 ALTER SEQUENCE produtos_id_seq    RESTART WITH 1;
 ALTER SEQUENCE categorias_id_seq  RESTART WITH 1;
 ALTER SEQUENCE users_id_seq       RESTART WITH 1;
