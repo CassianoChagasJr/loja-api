@@ -86,7 +86,7 @@ docker exec -i loja-postgres psql -U loja -d loja -v ON_ERROR_STOP=1 < seed/seed
 bash seed/verify-seed.sh   # opcional: confere se o hash do seed é "secret123"
 ```
 
-> ⚠️ O `seed.sql` **apaga todos os dados** (usuários, pedidos, endereços, pagamentos, produtos, galeria, categorias) e reinicia os ids em 1. Os arquivos em `./uploads` não são apagados.
+> ⚠️ O `seed.sql` **apaga todos os dados** (usuários, pedidos, endereços, pagamentos, produtos, galeria, categorias) e reinicia os ids em 1.
 > Ele roda dentro de uma transação: com `ON_ERROR_STOP=1`, qualquer erro cancela tudo e o banco fica como estava.
 
 O seed adapta o seed oficial da trilha para os nomes deste projeto (`produtos`, `order_itens`, coluna `perfil`) e acrescenta o usuário **MANAGER** e duas categorias.
