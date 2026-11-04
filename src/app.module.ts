@@ -8,6 +8,8 @@ import { OrdersModule } from './orders/orders.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CatalogoModule } from './catalogo/catalogo.module.js';
 import { CategoriasModule } from './categorias/categorias.module.js';
+import { EnderecoModule } from './endereco/endereco.module.js';
+import { EnderecoModule } from './endereco/endereco.module.js';
 
 //parei no video 31 de Josino - upload de arquivos
 
@@ -32,6 +34,7 @@ import { CategoriasModule } from './categorias/categorias.module.js';
     AuthModule,
     CatalogoModule,
     CategoriasModule,
+    EnderecoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
