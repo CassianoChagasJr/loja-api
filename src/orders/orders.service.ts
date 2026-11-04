@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import { DataSource } from 'typeorm';
 import { Produto } from '../produtos/produto.entity.js';
+import { EnderecoService } from '../endereco/endereco.service.js';
 
 const PERFIS_COM_ACESSO_TOTAL = ['ADMIN', 'MANAGER'];
 const PERFIS_CANCELAM_QUALQUER = ['ADMIN'];
@@ -20,6 +21,7 @@ export class OrdersService {
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     private readonly dataSource: DataSource,
+    private readonly enderecoService: EnderecoService,
   ) {}
 
   async findAll() {
@@ -171,5 +173,35 @@ export class OrdersService {
     }
 
     throw new BadRequestException('Transição de status inválida');
+  }
+
+  async definirEnderecoForActor(
+    id: number,
+    enderecoId: number,
+    usuarioId: number,
+    perfil: string,
+  ) {
+    const order = await this.findOneForActor(id, usuarioId, perfil);
+
+    if (order.userId !== usuarioId) {
+      throw new ForbiddenException(
+        'Só o dono do pedido pode definir o endereço da entrega',
+      );
+    }
+
+    if (order.status !== 'ABERTO') {
+      throw new BadRequestException(
+        `Pedido ${order.status} não pode mudar de endereço`,
+      );
+    }
+
+    const endereco = await this.enderecoService.findOneForUser(
+      enderecoId,
+      usuarioId,
+    );
+
+    order.enderecoId = endereco.id;
+    order.endereco = endereco;
+    return this.orderRepository.save(order);
   }
 }

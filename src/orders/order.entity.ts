@@ -5,7 +5,9 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  JoinColumn,
 } from 'typeorm';
+import { Endereco } from '../endereco/endereco.entity.js';
 
 export type OrderStatus = 'ABERTO' | 'PAGO' | 'CANCELADO';
 
@@ -16,6 +18,13 @@ export class Order {
 
   @Column({ type: 'int' })
   userId: number;
+
+  @Column({ type: 'int', nullable: true })
+  enderecoId: number | null;
+
+  @ManyToOne(() => Endereco, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'enderecoId' })
+  endereco: Endereco | null;
 
   @Column({ type: 'varchar', length: 20, default: 'ABERTO' })
   status: OrderStatus;
