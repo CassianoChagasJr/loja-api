@@ -33,7 +33,7 @@ export class EnderecoService {
     });
 
     if (!endereco) {
-      throw new NotFoundException(`Endereço ${id} não encontrado`);
+      throw new NotFoundException(`Endereço ${id} não encontrado entre os seus endereços`);
     }
 
     return endereco;
