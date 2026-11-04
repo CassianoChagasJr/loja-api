@@ -11,7 +11,7 @@ export class EnderecoController {
   }
   @Post()
   createEndereco() {
-    return this.enderecoService.createEndereco();
+    return this.enderecoService.createForUser();
   }
 
   @Put('endereco/:id')
