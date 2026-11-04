@@ -14,6 +14,7 @@ import {
   Query,
   Res,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -32,7 +33,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
@@ -40,6 +41,56 @@ import type { Response } from 'express';
 import { PatchProdutoDto } from './dto/patch-produto.dto.js';
 import { ListaProdutosQueryDto } from './dto/lista-produtos-query.dto.js';
 import { UpdateProdutoCategoriaDto } from './dto/update-produto-categoria.dto.js';
+
+// ---------------------------------------------------------------------------
+// Regras de upload da GALERIA (cap. 9), aplicadas pelo multer ANTES do handler
+// ---------------------------------------------------------------------------
+const GALERIA_MAX_ARQUIVOS = 5; // mais que isso -> 400
+const GALERIA_MAX_BYTES = 2 * 1024 * 1024; // 2 MB por arquivo; acima -> 413
+const GALERIA_MIMES = ['image/jpeg', 'image/png']; // outro tipo -> 400
+
+const opcoesUploadGaleria = {
+  // Salva em ./uploads com nome único: timestamp + número aleatório + nome original.
+  // O aleatório evita colisão quando vários arquivos chegam no mesmo milissegundo.
+  storage: diskStorage({
+    destination: './uploads',
+    filename: (_req, file, callback) => {
+      const safe = file.originalname.replace(/\s+/g, '_');
+      const unico = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      callback(null, `${unico}-${safe}`);
+    },
+  }),
+  limits: { fileSize: GALERIA_MAX_BYTES },
+  // Roda para cada arquivo ANTES de gravá-lo no disco. Qualquer erro aqui
+  // REJEITA a requisição inteira com 400 e o multer apaga o que já tinha gravado
+  fileFilter: (
+    req: { params: Record<string, string> },
+    file: Express.Multer.File,
+    callback: (erro: Error | null, aceitar: boolean) => void,
+  ) => {
+    // 1) ":id" não numérico -> 400 já aqui. No Nest a ordem é
+    //    guards -> interceptors -> pipes: o ParseIntPipe só rodaria DEPOIS do
+    //    multer gravar o arquivo, e ele ficaria órfão em ./uploads
+    if (!/^\d+$/.test(req.params.id)) {
+      return callback(
+        new BadRequestException(
+          'Validation failed (numeric string is expected)',
+        ),
+        false,
+      );
+    }
+    // 2) Tipo inválido: diferente do upload único (que descarta em silêncio)
+    if (!GALERIA_MIMES.includes(file.mimetype)) {
+      return callback(
+        new BadRequestException(
+          `Tipo de arquivo não permitido: ${file.mimetype}. Envie apenas image/jpeg ou image/png`,
+        ),
+        false,
+      );
+    }
+    callback(null, true);
+  },
+};
 
 // O controller NÃO tem regra de negócio: pega dados da requisição e chama o service.
 // Quem pode chamar cada rota: @UseGuards(JwtAuthGuard, RolesGuard) + @Roles(...).
@@ -316,5 +367,100 @@ export class ProdutosController {
     }
     // Envia o arquivo em partes (stream) direto para a resposta
     createReadStream(caminho).pipe(res);
+  }
+
+  // ===========================================================================
+  // GALERIA DE IMAGENS (cap. 9)
+  // ===========================================================================
+
+  // POST /produtos/:id/images  (só ADMIN)  multipart com várias imagens no campo "files"
+  @Post(':id/images')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: `Adiciona imagens à galeria do produto (até ${GALERIA_MAX_ARQUIVOS} por envio, jpeg/png, até 2 MB cada). Apenas Administradores`,
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: { type: 'array', items: { type: 'string', format: 'binary' } },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Imagens adicionadas à galeria' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Nenhum arquivo, tipo diferente de jpeg/png ou mais arquivos que o permitido',
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso proibido. Você não tem permissão para acessar esse recurso',
+  })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  @ApiResponse({ status: 413, description: 'Arquivo maior que 2 MB' })
+  // FilesInterceptor (plural): lê VÁRIOS arquivos do campo "files", no máximo 5
+  @UseInterceptors(
+    FilesInterceptor('files', GALERIA_MAX_ARQUIVOS, opcoesUploadGaleria),
+  )
+  adicionarImagens(
+    @Param('id', ParseIntPipe) id: number,
+    // Array com os arquivos que passaram pelo fileFilter
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.produtoService.adicionarImagens(id, files);
+  }
+
+  // GET /produtos/:id/images  (público) — lista a galeria do produto
+  @Get(':id/images')
+  @ApiOperation({ summary: 'Lista as imagens da galeria do produto' })
+  @ApiResponse({ status: 200, description: 'Lista de imagens' })
+  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
+  listarImagens(@Param('id', ParseIntPipe) id: number) {
+    return this.produtoService.listarImagens(id);
+  }
+
+  // DELETE /produtos/:id/images/:imageId  (só ADMIN) — remove UMA imagem
+  @Delete(':id/images/:imageId')
+  @HttpCode(204) // sucesso sem corpo
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Remove uma imagem da galeria do produto (Apenas Administradores)',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Imagem removida (registro e arquivo)',
+  })
+  @ApiResponse({ status: 400, description: 'Id não numérico' })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Não autorizado. Você precisa estar logado para ter acesso a este recurso',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso proibido. Você não tem permissão para acessar esse recurso',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Imagem não encontrada na galeria deste produto',
+  })
+  removerImagem(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('imageId', ParseIntPipe) imageId: number,
+  ) {
+    return this.produtoService.removerImagem(id, imageId);
   }
 }

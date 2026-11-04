@@ -1,6 +1,6 @@
 # loja-api
 
-API de uma loja virtual feita em **NestJS + TypeORM + PostgreSQL**, seguindo a trilha da disciplina de Programação Web 3 (linha **P**, caps. 1 a 10) e ampliada com a **linha A**: pacotes **Endereço**, **Pagamento (fake)** e **Categorias**, mais as features A dos capítulos.
+API de uma loja virtual feita em **NestJS + TypeORM + PostgreSQL**, seguindo a trilha da disciplina de Programação Web 3 do Instituto Federal de Educação Ciência e Tecnologia - Campus Jaboatão dos Guararapes (linha **P**, caps. 1 a 10) e ampliada com a **linha A**: pacotes **Endereço**, **Pagamento (fake)** e **Categorias**, mais as features A dos capítulos.
 
 > **Nomes em português:** o projeto usa rotas e campos em português (`/produtos`, `nome`, `acesso_token`, `CLIENTE`...). A [tabela de equivalência](#tabela-de-equivalência-contrato--este-projeto) mostra o nome do contrato e o nome usado aqui.
 
@@ -86,7 +86,7 @@ docker exec -i loja-postgres psql -U loja -d loja -v ON_ERROR_STOP=1 < seed/seed
 bash seed/verify-seed.sh   # opcional: confere se o hash do seed é "secret123"
 ```
 
-> ⚠️ O `seed.sql` **apaga todos os dados** (usuários, pedidos, endereços, pagamentos, produtos, categorias) e reinicia os ids em 1.
+> ⚠️ O `seed.sql` **apaga todos os dados** (usuários, pedidos, endereços, pagamentos, produtos, galeria, categorias) e reinicia os ids em 1. Os arquivos em `./uploads` não são apagados.
 > Ele roda dentro de uma transação: com `ON_ERROR_STOP=1`, qualquer erro cancela tudo e o banco fica como estava.
 
 O seed adapta o seed oficial da trilha para os nomes deste projeto (`produtos`, `order_itens`, coluna `perfil`) e acrescenta o usuário **MANAGER** e duas categorias.
@@ -150,7 +150,9 @@ http://localhost:3000/api
 | 6 | GET | `/auth/me` | JWT |
 | 6 | POST | `/auth/refresh` | refresh_token no body |
 | 7 | — | papel `MANAGER` (ver [matriz](#matriz-de-papéis)) | — |
-| 9 | POST / DELETE | `/produtos/:id/images`, `/produtos/:id/images/:imageId` | **pendente** (galeria ainda não implementada) |
+| 9 | POST | `/produtos/:id/images` (campo `files`, até 5 imagens jpeg/png de até 2 MB) | ADMIN |
+| 9 | GET | `/produtos/:id/images` | público |
+| 9 | DELETE | `/produtos/:id/images/:imageId` | ADMIN |
 
 ### Linha A — pacote Endereço
 
@@ -248,6 +250,17 @@ http://localhost:3000/api
 - Leitura pública; criar, editar, apagar e associar são **só ADMIN** (cliente com JWT → 403).
 - Apagar categoria não apaga produtos (`onDelete: 'SET NULL'`).
 
+### Galeria de imagens (cap. 9)
+- Tabela própria `produto_imagens` (N imagens → 1 produto). É diferente do `imageFileName` da linha P, que guarda **uma** imagem só.
+- `POST /produtos/:id/images` usa `FilesInterceptor('files', 5)`: **várias** imagens no campo `files`, no máximo **5** por envio.
+- Validações feitas pelo multer **antes** de chegar no service:
+  - tipo diferente de `image/jpeg` ou `image/png` → **400** e a requisição inteira é rejeitada (nenhuma imagem é salva);
+  - arquivo maior que **2 MB** → **413** (Payload Too Large);
+  - mais de 5 arquivos → **400**.
+- No service: nenhum arquivo → **400**; produto inexistente → **404** (e os arquivos já gravados em `./uploads` são apagados).
+- `DELETE /produtos/:id/images/:imageId` busca a imagem por **id + produtoId** na mesma consulta: imagem de outro produto → **404**. Remove o registro e o arquivo do disco → **204**.
+- Apagar o produto apaga as linhas da galeria (`onDelete: 'CASCADE'`).
+
 ### Refresh token (cap. 6)
 - O login devolve `acesso_token` (curto, `JWT_SECRET`) e `refresh_token` (longo, `JWT_REFRESH_SECRET`).
 - `POST /auth/refresh` valida o refresh com o segredo próprio e devolve um novo `acesso_token`. Inválido/expirado → 401.
@@ -288,6 +301,7 @@ erDiagram
     ORDERS ||--|{ ORDER_ITENS : "orderId"
     ORDERS ||--o{ PAGAMENTOS : "pedidoId"
     PRODUTOS ||--o{ ORDER_ITENS : "idProduto (lógico)"
+    PRODUTOS ||--o{ PRODUTO_IMAGENS : "produtoId (CASCADE)"
     CATEGORIAS |o--o{ PRODUTOS : "idCategoria (SET NULL)"
 ```
 
@@ -331,6 +345,7 @@ stateDiagram-v2
 | `DELETE /payments/:id` | `DELETE /pagamentos/:id` |
 | método `CARD` / `BOLETO` / `PIX` | `CARTAO` / `BOLETO` / `PIX` |
 | status do pagamento `PENDING` / `PAID` / `CANCELLED` | `PENDENTE` / `PAGO` / `CANCELADO` |
+| `POST /products/:id/images`, `DELETE /products/:id/images/:imageId` | `POST /produtos/:id/images` (campo `files`), `DELETE /produtos/:id/images/:imageId` |
 | tabelas `products`, `order_items` | `produtos`, `order_itens` |
 
 Sem mudança: `/health`, `/health/version`, `/auth/login`, `/auth/refresh`, `/orders`, `/orders/:id/cancel`, `/orders/:id/status`, porta 3000, Swagger em `/api`.
@@ -447,6 +462,26 @@ curl -s -o /dev/null -w '%{http_code}\n' -X DELETE $B/produtos/1 -H "Authorizati
 curl -s $B/orders -H "Authorization: Bearer $TOKEN_MGR"             # lista todos os pedidos
 ```
 
+### Cap. 9 — Galeria de imagens
+```bash
+# ana envia 2 imagens de uma vez (campo "files" repetido) → 201 com a lista criada
+curl -s -X POST $B/produtos/1/images -H "Authorization: Bearer $TOKEN_ANA"   -F 'files=@./fixtures/caneca.jpg' -F 'files=@./fixtures/caneca.jpg'
+curl -s $B/produtos/1/images                                        # lista a galeria (público)
+# tipo inválido → 400
+echo x > /tmp/fake.txt
+curl -s -X POST $B/produtos/1/images -H "Authorization: Bearer $TOKEN_ANA" -F 'files=@/tmp/fake.txt'
+# cli (CLIENTE) → 403
+curl -s -o /dev/null -w '%{http_code}
+' -X POST $B/produtos/1/images -H "Authorization: Bearer $TOKEN_CLI"   -F 'files=@./fixtures/caneca.jpg'
+# remove a imagem 1 do produto 1 → 204; de novo → 404; imagem 2 pelo produto errado → 404
+curl -s -o /dev/null -w '%{http_code}
+' -X DELETE $B/produtos/1/images/1 -H "Authorization: Bearer $TOKEN_ANA"
+curl -s -o /dev/null -w '%{http_code}
+' -X DELETE $B/produtos/1/images/1 -H "Authorization: Bearer $TOKEN_ANA"
+curl -s -o /dev/null -w '%{http_code}
+' -X DELETE $B/produtos/2/images/2 -H "Authorization: Bearer $TOKEN_ANA"
+```
+
 ### Pacote Categorias
 ```bash
 curl -s $B/categorias
@@ -502,12 +537,10 @@ curl -s -o /dev/null -w '%{http_code}\n' -X DELETE $B/pagamentos/1 -H "Authoriza
 | Ferramenta | Onde ajudou | O que eu fiz / mudei |
 |---|---|---|
 | **Claude (Anthropic)**, via Claude Code | **Endereço** e `PATCH /orders/:id/endereco`: orientação passo a passo (quais arquivos, decorators e métodos usar e por quê). | Escrevi o código do pacote Endereço; a IA revisou e apontou erros (principalmente de digitação e o guard que faltava no controller). Decidi manter os nomes em português e a política 404. |
-| | **Pagamento**: o pacote foi **gerado pela IA** (entidade, DTOs, service, controller, módulo), a partir de um desenho de regras discutido antes. | Revisei, testei as regras (pagamento ativo duplicado, transação PAGO, 403/404) e estudei o código comentado para explicar. |
+| | **Pagamento**: o pacote foi gerado com orientação do Claude (entidade, DTOs, service, controller, módulo), a partir de um desenho de regras discutido antes. | Revisei, testei as regras (pagamento ativo duplicado, transação PAGO, 403/404) e estudei o código comentado para explicar. |
 | | Swagger das rotas A, ajuste do `PatchProdutoDto` para `PartialType(CreateProdutoDto)`, adaptação do seed ao schema em português e coleção de testes do Postman. | Conferi as rotas e os status contra o código e rodei os testes. |
-| | **Este README foi escrito pelo Claude**, a partir do código e da avaliação. | Revisei o conteúdo e esta seção. |
-| | **Comentários no código**: o Claude comentou todos os arquivos de `src/` (o que cada rota faz, quem pode chamar e a ordem dos erros). | Usei os comentários para estudar e explicar o código. |
-| | Revisão geral, com correções: `ParseIntPipe` em `GET/PUT/DELETE /produtos/:id` (antes `abc` dava 500); `PATCH /produtos/:id/categoria` buscava a categoria pelo id do produto; regra "só ADMIN marca PAGO em `PATCH /orders/:id/status`". | Decidi aplicar as correções e testei os casos. |
-| | Features A anteriores (refresh, status do pedido, MANAGER, categorias): orientação passo a passo e revisão. | Escrevi o código e testei cada rota (200/400/401/403/404). |
-| **GitHub Copilot** | Sugestões de autocompletar no editor. | Aceitei ou descartei as sugestões conforme o código. |
-
-A IA não é usada durante a apresentação oral.
+| | **Este README foi escrito pelo Claude**, a partir do código e da avaliação disponibilizada pelo professor Josino. | Revisei o conteúdo e esta seção. |
+| | **Comentários no código**: o Claude comentou todos os arquivos de `src/` (o que cada rota faz, quem pode chamar e a ordem dos erros). | Os comentários serão usados para orientação e boas práticas de desenvolvimento |
+| | **Galeria de imagens (cap. 9)**: revisada e comentada pelo Claude (entidade `ProdutoImagem`, `FilesInterceptor`, regras de MIME/tamanho/quantidade, rotas `POST`/`GET`/`DELETE /produtos/:id/images`), com comentários. | Revisei e testei os casos (201, 400, 401, 403, 404, 413). |
+| | Revisão geral, com correções: `ParseIntPipe` em `GET/PUT/DELETE /produtos/:id` (antes `abc` dava 500); `PATCH /produtos/:id/categoria` buscava a categoria pelo id do produto; regra "só ADMIN marca PAGO em `PATCH /orders/:id/status`". | Decidi aplicar as correções e testei os casos, as correções retornaram sucesso |
+| | Features A anteriores (refresh, status do pedido, MANAGER, categorias): orientação passo a passo e revisão. | Escrevi o código e testei cada rota (200/400/401/403/404)|
